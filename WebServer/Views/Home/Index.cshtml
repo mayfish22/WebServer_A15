@@ -1,0 +1,99 @@
+﻿@{
+    Layout = "_Layout";
+}
+
+@section Styles{
+    <style>
+    </style>
+}
+
+<div class="container">
+    <div class="row">&nbsp;</div>
+    <div class="row">
+        <div class="col-2">User</div>
+        <div class="col-4"><input type="text" id="userInput" /></div>
+    </div>
+    <div class="row">
+        <div class="col-2">Message</div>
+        <div class="col-4"><input type="text" id="messageInput" /></div>
+    </div>
+    <div class="row">&nbsp;</div>
+    <div class="row">
+        <div class="col-6">
+            <input type="button" id="sendButton" value="Send Message" />
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-12">
+        <hr />
+    </div>
+</div>
+<div class="row">
+    <div class="col-6">
+        <ul id="messagesList"></ul>
+    </div>
+</div>
+
+@section Scripts{
+    <script>
+        $(async () => {
+            //設定連線
+            var connection = new signalR.HubConnectionBuilder().withUrl("/chatHub").build();
+
+            //先讓送出按鈕不可使用
+            //Disable the send button until connection is established.
+            document.getElementById("sendButton").disabled = true;
+
+            //設定接收到 ReceiveMessage 時要做什麼事
+            connection.on("ReceiveMessage", function (user, message) {
+                console.log({user, message});
+                //參數
+                toastr.options = {
+                    "closeButton": false,
+                    "debug": false,
+                    "newestOnTop": false,
+                    "progressBar": false,
+                    "positionClass": "toast-top-right",
+                    "preventDuplicates": false,
+                    "onclick": null,
+                    "showDuration": "300",
+                    "hideDuration": "1000",
+                    "timeOut": "5000",
+                    "extendedTimeOut": "1000",
+                    "showEasing": "swing",
+                    "hideEasing": "linear",
+                    "showMethod": "fadeIn",
+                    "hideMethod": "fadeOut"
+                };
+                //執行
+                if (document.getElementById("userInput").value == user){
+                    //自己
+                    toastr["success"](`${message}`, `你說：`);
+                }
+                else{
+                    //對方
+                    toastr["info"](`${message}`, `${user} 說：`);
+                }
+            });
+
+            //開始連線
+            connection.start().then(function () {
+                //都OK了,再啟用送出按鈕
+                document.getElementById("sendButton").disabled = false;
+            }).catch(function (err) {
+                return console.error(err.toString());
+            });
+
+            //UI互動事件
+            document.getElementById("sendButton").addEventListener("click", function (event) {
+                var user = document.getElementById("userInput").value;
+                var message = document.getElementById("messageInput").value;
+                connection.invoke("SendMessage", user, message).catch(function (err) {
+                    return console.error(err.toString());
+                });
+                event.preventDefault();
+            });
+        });
+    </script>
+}
